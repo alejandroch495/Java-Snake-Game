@@ -14,15 +14,16 @@ import java.awt.event.KeyEvent;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.Timer;
+import java.util.Random;
 
 public class Board extends JPanel implements ActionListener {
 
-    private final int B_WIDTH = 300;
-    private final int B_HEIGHT = 300;
+    private final int B_WIDTH = 600;
+    private final int B_HEIGHT = 600;
     private final int DOT_SIZE = 10;
-    private final int ALL_DOTS = 900;
+    private final int ALL_DOTS = (B_WIDTH * B_HEIGHT) / DOT_SIZE;
     private final int RAND_POS = 29;
-    private final int DELAY = 140;
+    private int DELAY = 140;
 
     private final int x[] = new int[ALL_DOTS];
     private final int y[] = new int[ALL_DOTS];
@@ -42,12 +43,20 @@ public class Board extends JPanel implements ActionListener {
     private Image apple;
     private Image head;
 
-    String aEatSound = "src/resources/apple.wav";
-    Music appleEat = new Music();
-    String gOverSound = "src/resources/gameOver.wav";
-    Music gameOver = new Music();
-    String hSound = "src/resources/hit.wav";
-    Music hit = new Music();
+    private Random random = new Random();
+    private String score;
+    private String speed;
+    private String highscore = "";
+    private int highScoreCheck, scoreCheck;
+    private Speed timerSpeed = new Speed();
+    private String aEatSound;
+    private Music appleEat;
+    private String gOverSound;
+    private Music gameOver;
+    private String hSound;
+    private Music hit;
+    private String gStart;
+    private Music gameStart;
 
     public Board() {
 
@@ -61,8 +70,21 @@ public class Board extends JPanel implements ActionListener {
         setFocusable(true);
 
         setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
+        loadSounds();
         loadImages();
         initGame();
+
+    }
+
+    private void loadSounds() {
+        gStart = "src/resources/gamestart.wav";
+        gameStart = new Music();
+        aEatSound = "src/resources/apple.wav";
+        appleEat = new Music();
+        gOverSound = "src/resources/gameOver.wav";
+        gameOver = new Music();
+        hSound = "src/resources/hit.wav";
+        hit = new Music();
     }
 
     private void loadImages() {
@@ -78,7 +100,7 @@ public class Board extends JPanel implements ActionListener {
     }
 
     private void initGame() {
-
+        gameStart.playSound(gStart);
         dots = 3;
 
         for (int z = 0; z < dots; z++) {
@@ -100,9 +122,20 @@ public class Board extends JPanel implements ActionListener {
     }
 
     private void doDrawing(Graphics g) {
-
+        if (highscore.equalsIgnoreCase("")) {
+            highscore = Score.getHighScore();
+        }
         if (inGame) {
+            Font small = new Font("Helvetica", Font.BOLD, 14);
+            FontMetrics metr = getFontMetrics(small);
 
+            g.setColor(Color.white);
+            g.setFont(small);
+            score = String.valueOf((dots - 3) * 10);
+            speed = String.valueOf(140 - timer.getDelay());
+            g.drawString("Current score : " + score, 0, 20);
+            g.drawString("Current speed : " + speed, 140, 20);
+            g.drawString("Highscore : " + highscore, 280, 20);
             g.drawImage(apple, apple_x, apple_y, this);
 
             for (int z = 0; z < dots; z++) {
@@ -117,7 +150,6 @@ public class Board extends JPanel implements ActionListener {
 
         } else {
 
-            gameOver.playSound(gOverSound);
             gameOver(g);
 
         }
@@ -129,6 +161,7 @@ public class Board extends JPanel implements ActionListener {
         Font small = new Font("Helvetica", Font.BOLD, 14);
         FontMetrics metr = getFontMetrics(small);
 
+        gameOver.playSound(gOverSound);
         g.setColor(Color.white);
         g.setFont(small);
         g.drawString(msg, (B_WIDTH - metr.stringWidth(msg)) / 2, B_HEIGHT / 2);
@@ -137,6 +170,9 @@ public class Board extends JPanel implements ActionListener {
     private void checkApple() {
 
         if ((x[0] == apple_x) && (y[0] == apple_y)) {
+
+            DELAY = timerSpeed.setDelay(timer, DELAY, 2);
+            timerSpeed.updateTimer(timer, DELAY);
 
             appleEat.playSound(aEatSound);
             dots++;
@@ -169,33 +205,39 @@ public class Board extends JPanel implements ActionListener {
     }
 
     private void checkCollision() {
-
+        highScoreCheck = Integer.parseInt((highscore.split(":")[1]));
+        scoreCheck = Integer.parseInt(score);
         for (int z = dots; z > 0; z--) {
 
             if ((z > 4) && (x[0] == x[z]) && (y[0] == y[z])) {
                 inGame = false;
                 hit.playSound(hSound);
+                Score.checkScore(scoreCheck, highScoreCheck);
             }
         }
 
         if (y[0] >= B_HEIGHT) {
             inGame = false;
             hit.playSound(hSound);
+            Score.checkScore(scoreCheck, highScoreCheck);
         }
 
         if (y[0] < 0) {
             inGame = false;
             hit.playSound(hSound);
+            Score.checkScore(scoreCheck, highScoreCheck);
         }
 
         if (x[0] >= B_WIDTH) {
             inGame = false;
             hit.playSound(hSound);
+            Score.checkScore(scoreCheck, highScoreCheck);
         }
 
         if (x[0] < 0) {
             inGame = false;
             hit.playSound(hSound);
+            Score.checkScore(scoreCheck, highScoreCheck);
         }
 
         if (!inGame) {
@@ -205,11 +247,9 @@ public class Board extends JPanel implements ActionListener {
 
     private void locateApple() {
 
-        int r = (int) (Math.random() * RAND_POS);
-        apple_x = ((r * DOT_SIZE));
+        apple_x = random.nextInt((int) (B_WIDTH / DOT_SIZE)) * DOT_SIZE;
 
-        r = (int) (Math.random() * RAND_POS);
-        apple_y = ((r * DOT_SIZE));
+        apple_y = random.nextInt((int) (B_HEIGHT / DOT_SIZE)) * DOT_SIZE;
     }
 
     @Override
