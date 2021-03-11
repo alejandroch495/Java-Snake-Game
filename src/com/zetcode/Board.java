@@ -23,7 +23,7 @@ public class Board extends JPanel implements ActionListener {
     private final int DOT_SIZE = 10;
     private final int ALL_DOTS = (B_WIDTH * B_HEIGHT) / DOT_SIZE;
     private final int RAND_POS = 29;
-    private int DELAY = 140;
+    private int DELAY = 340;
 
     private final int x[] = new int[ALL_DOTS];
     private final int y[] = new int[ALL_DOTS];
@@ -42,6 +42,11 @@ public class Board extends JPanel implements ActionListener {
     private Image ball;
     private Image apple;
     private Image head;
+    private Image taili;
+    private Image tailr;
+    private Image taill;
+    private Image tailu;
+    private Image taild;
 
     private Random random = new Random();
     private String score;
@@ -57,6 +62,9 @@ public class Board extends JPanel implements ActionListener {
     private Music hit;
     private String gStart;
     private Music gameStart;
+    private Tailpos tail = new Tailpos(x[0], y[0]);
+    private Headpos headPos = new Headpos(x[0], y[0]);
+    private boolean stopped = false;
 
     public Board() {
 
@@ -97,6 +105,14 @@ public class Board extends JPanel implements ActionListener {
 
         ImageIcon iih = new ImageIcon("src/resources/head.png");
         head = iih.getImage();
+        ImageIcon iitD = new ImageIcon("src/resources/tailD.png");
+        taild = iitD.getImage();
+        ImageIcon iitL = new ImageIcon("src/resources/tailL.png");
+        taill = iitL.getImage();
+        ImageIcon iitU = new ImageIcon("src/resources/tailU.png");
+        tailu = iitU.getImage();
+        ImageIcon iitR = new ImageIcon("src/resources/tailR.png");
+        tailr = iitR.getImage();
     }
 
     private void initGame() {
@@ -125,7 +141,7 @@ public class Board extends JPanel implements ActionListener {
         if (highscore.equalsIgnoreCase("")) {
             highscore = Score.getHighScore();
         }
-        if (inGame) {
+        if ((inGame) && (!stopped)) {
             Font small = new Font("Helvetica", Font.BOLD, 14);
             FontMetrics metr = getFontMetrics(small);
 
@@ -139,8 +155,25 @@ public class Board extends JPanel implements ActionListener {
             g.drawImage(apple, apple_x, apple_y, this);
 
             for (int z = 0; z < dots; z++) {
+                tail.updatePos(x[dots - 1], y[dots - 1]);
                 if (z == 0) {
                     g.drawImage(head, x[z], y[z], this);
+
+                } else if (z == (dots - 1)) {
+                    if (headPos.getPos().equals(tail.getPos()) && rightDirection) {
+                        taili = tailr;
+                    }
+                    if (headPos.getPos().equals(tail.getPos()) && leftDirection) {
+                        taili = taill;
+                    }
+                    if (headPos.getPos().equals(tail.getPos()) && upDirection) {
+                        taili = tailu;
+                    }
+                    if (headPos.getPos().equals(tail.getPos()) && downDirection) {
+                        taili = taild;
+                    }
+                    g.drawImage(taili, x[z], y[z], this);
+
                 } else {
                     g.drawImage(ball, x[z], y[z], this);
                 }
@@ -148,11 +181,15 @@ public class Board extends JPanel implements ActionListener {
 
             Toolkit.getDefaultToolkit().sync();
 
+        } else if ((inGame) && (stopped)) {
+            gamePause(g);
+            timer.stop();
         } else {
 
             gameOver(g);
 
         }
+
     }
 
     private void gameOver(Graphics g) {
@@ -162,6 +199,17 @@ public class Board extends JPanel implements ActionListener {
         FontMetrics metr = getFontMetrics(small);
 
         gameOver.playSound(gOverSound);
+        g.setColor(Color.white);
+        g.setFont(small);
+        g.drawString(msg, (B_WIDTH - metr.stringWidth(msg)) / 2, B_HEIGHT / 2);
+    }
+
+    private void gamePause(Graphics g) {
+
+        String msg = "Game Pause";
+        Font small = new Font("Helvetica", Font.BOLD, 14);
+        FontMetrics metr = getFontMetrics(small);
+
         g.setColor(Color.white);
         g.setFont(small);
         g.drawString(msg, (B_WIDTH - metr.stringWidth(msg)) / 2, B_HEIGHT / 2);
@@ -272,28 +320,59 @@ public class Board extends JPanel implements ActionListener {
 
             int key = e.getKeyCode();
 
-            if ((key == KeyEvent.VK_LEFT) && (!rightDirection)) {
+            if ((key == KeyEvent.VK_LEFT) && (!rightDirection) && (!leftDirection)) {
                 leftDirection = true;
                 upDirection = false;
                 downDirection = false;
+                headPos.updatePos(x[0], y[0]);
+                tail.updatePos(x[dots - 1], y[dots - 1]);
+                tail.printPos();
+                // System.out.println("head at : " + x[0] + " , " + y[0] + " Direction : L");
+                // System.out.println("tail at : " + x[dots - 1] + " , " + y[dots - 1]);
             }
 
-            if ((key == KeyEvent.VK_RIGHT) && (!leftDirection)) {
+            if ((key == KeyEvent.VK_RIGHT) && (!leftDirection) && (!rightDirection)) {
                 rightDirection = true;
                 upDirection = false;
                 downDirection = false;
+                headPos.updatePos(x[0], y[0]);
+                tail.updatePos(x[dots - 1], y[dots - 1]);
+                tail.printPos();
+                // System.out.println("head at : " + x[0] + " , " + y[0] + " Direction : R");
+                // System.out.println("tail at : " + x[dots - 1] + " , " + y[dots - 1]);
             }
 
-            if ((key == KeyEvent.VK_UP) && (!downDirection)) {
+            if ((key == KeyEvent.VK_UP) && (!downDirection) && (!upDirection)) {
                 upDirection = true;
                 rightDirection = false;
                 leftDirection = false;
+                headPos.updatePos(x[0], y[0]);
+                tail.updatePos(x[dots - 1], y[dots - 1]);
+                tail.printPos();
+                // System.out.println("head at : " + x[0] + " , " + y[0] + " Direction : U");
+                // System.out.println("tail at : " + x[dots - 1] + " , " + y[dots - 1]);
             }
 
-            if ((key == KeyEvent.VK_DOWN) && (!upDirection)) {
+            if ((key == KeyEvent.VK_DOWN) && (!upDirection) && (!downDirection)) {
                 downDirection = true;
                 rightDirection = false;
                 leftDirection = false;
+                headPos.updatePos(x[0], y[0]);
+                tail.updatePos(x[dots - 1], y[dots - 1]);
+                tail.printPos();
+                // System.out.println("head at : " + x[0] + " , " + y[0] + " Direction : D");
+                // System.out.println("tail at : " + x[dots - 1] + " , " + y[dots - 1]);
+            }
+
+            if ((key == KeyEvent.VK_ESCAPE) && (inGame) && (!stopped)) {
+
+                stopped = true;
+
+            } else if ((key == KeyEvent.VK_ESCAPE) && (inGame) && (stopped)) {
+
+                stopped = false;
+                timer.start();
+
             }
         }
     }
